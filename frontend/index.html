@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Payroll Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style> .link{color:#2563eb} </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="bg-white border-b shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-blue-600 text-white grid place-items-center rounded">P</div>
+        <span class="font-semibold text-xl">Payroll HR</span>
+      </div>
+      <div id="userArea" class="text-sm"></div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 py-6 flex gap-6">
+    <aside class="w-64 hidden md:block">
+      <nav class="space-y-1" id="sidebarNav"></nav>
+    </aside>
+    <main class="flex-1">
+      <section id="loginView" class="max-w-md mx-auto mt-10">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-lg font-semibold mb-4">Login</h2>
+          <div class="space-y-3">
+            <input id="email" class="w-full border rounded px-3 py-2" placeholder="Email" />
+            <input id="password" type="password" class="w-full border rounded px-3 py-2" placeholder="Password" />
+            <button id="loginBtn" class="w-full bg-blue-600 text-white rounded px-3 py-2">Sign In</button>
+            <div class="flex gap-2 text-sm">
+              <button id="showRegisterBtn" class="text-blue-600 hover:underline">Register</button>
+              <button id="showResetBtn" class="text-blue-600 hover:underline">Reset Password</button>
+            </div>
+            <p class="text-xs text-gray-500">Admin: admin@demo.com / Admin@123<br>Employee: emp1@demo.com / Emp@123</p>
+            <p id="loginError" class="text-sm text-red-600"></p>
+          </div>
+        </div>
+        
+        <!-- Registration Form -->
+        <div id="registerForm" class="bg-white rounded-lg shadow p-6 mt-4 hidden">
+          <h3 class="text-lg font-semibold mb-4">Employee Registration</h3>
+          <div class="space-y-3">
+            <input id="regEmail" class="w-full border rounded px-3 py-2" placeholder="Email" />
+            <input id="regPassword" type="password" class="w-full border rounded px-3 py-2" placeholder="Password (8+ chars, upper/lower/digit/symbol)" />
+            <input id="regEmployeeId" class="w-full border rounded px-3 py-2" placeholder="Employee ID (optional)" />
+            <button id="registerBtn" class="w-full bg-green-600 text-white rounded px-3 py-2">Register</button>
+            <button id="hideRegisterBtn" class="w-full bg-gray-500 text-white rounded px-3 py-2">Cancel</button>
+            <p id="registerError" class="text-sm text-red-600"></p>
+            <p id="registerSuccess" class="text-sm text-green-600"></p>
+          </div>
+        </div>
+
+        <!-- Password Reset Form -->
+        <div id="resetForm" class="bg-white rounded-lg shadow p-6 mt-4 hidden">
+          <h3 class="text-lg font-semibold mb-4">Password Reset</h3>
+          <div class="space-y-3">
+            <input id="resetEmail" class="w-full border rounded px-3 py-2" placeholder="Email" />
+            <button id="requestResetBtn" class="w-full bg-orange-600 text-white rounded px-3 py-2">Request Reset</button>
+            <button id="hideResetBtn" class="w-full bg-gray-500 text-white rounded px-3 py-2">Cancel</button>
+            <p id="resetError" class="text-sm text-red-600"></p>
+            <p id="resetSuccess" class="text-sm text-green-600"></p>
+          </div>
+        </div>
+      </section>
+
+      <section id="dashboardView" class="hidden space-y-6">
+        <div class="grid md:grid-cols-3 gap-4">
+          <div class="bg-white p-4 rounded shadow" id="cardEmployees"></div>
+          <div class="bg-white p-4 rounded shadow" id="cardPayroll"></div>
+          <div class="bg-white p-4 rounded shadow" id="cardAnomalies"></div>
+        </div>
+
+        <div id="adminPanels" class="space-y-6 hidden">
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Run Payroll</h3>
+              <div class="flex gap-2">
+                <input id="payrollMonth" class="border rounded px-2 py-1" placeholder="YYYY-MM" />
+                <button id="runPayrollBtn" class="bg-blue-600 text-white px-3 py-1 rounded">Run</button>
+              </div>
+            </div>
+            <pre id="runPayrollResult" class="text-sm bg-gray-50 p-2 rounded"></pre>
+          </div>
+
+
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Leave Balances</h3>
+              <div class="flex gap-2">
+                <button id="loadLeaveBalancesBtn" class="bg-purple-600 text-white px-3 py-1 rounded">Load Balances</button>
+              </div>
+            </div>
+            <div class="overflow-auto">
+              <table class="w-full text-sm" id="leaveBalancesTable"></table>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">All Attendance Records</h3>
+              <div class="flex gap-2">
+                <input id="attendanceEmployeeId" class="border rounded px-2 py-1" placeholder="Employee ID" />
+                <input id="attendanceDateFrom" class="border rounded px-2 py-1" placeholder="From Date (YYYY-MM-DD)" />
+                <input id="attendanceDateTo" class="border rounded px-2 py-1" placeholder="To Date (YYYY-MM-DD)" />
+                <button id="loadAllAttendanceBtn" class="bg-purple-600 text-white px-3 py-1 rounded">Load</button>
+                <button id="seedAttendanceBtn" class="bg-green-600 text-white px-3 py-1 rounded">Seed Data</button>
+              </div>
+            </div>
+            <div class="overflow-auto">
+              <table class="w-full text-sm" id="allAttendanceTable"></table>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Monthly Attendance Summary</h3>
+              <div class="flex gap-2">
+                <input id="attendanceSummaryMonth" class="border rounded px-2 py-1" placeholder="YYYY-MM" />
+                <button id="loadAttendanceSummaryBtn" class="bg-purple-600 text-white px-3 py-1 rounded">Generate</button>
+              </div>
+            </div>
+            <div id="attendanceSummaryStats" class="grid md:grid-cols-4 gap-4 mb-4"></div>
+            <div class="overflow-auto">
+              <table class="w-full text-sm" id="attendanceSummaryTable"></table>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Employees</h3>
+              <div class="flex gap-2">
+                <button id="refreshEmployeesBtn" class="bg-gray-700 text-white px-3 py-1 rounded">Refresh</button>
+              </div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <h4 class="font-medium mb-2">Add Employee</h4>
+                <div class="grid grid-cols-2 gap-2">
+                  <input id="empName" class="border rounded px-2 py-1" placeholder="Name" />
+                  <input id="empEmail" class="border rounded px-2 py-1" placeholder="Email" />
+                  <input id="empDept" class="border rounded px-2 py-1" placeholder="Department" />
+                  <input id="empPos" class="border rounded px-2 py-1" placeholder="Designation" />
+                  <input id="empPhone" class="border rounded px-2 py-1" placeholder="Phone" />
+                  <input id="empSalary" class="border rounded px-2 py-1" placeholder="Base Salary" />
+                  <input id="empJoin" class="border rounded px-2 py-1" placeholder="Joining Date YYYY-MM-DD" />
+                  <button id="addEmpBtn" class="bg-blue-600 text-white px-3 py-1 rounded">Add</button>
+                </div>
+                <p id="addEmpResult" class="text-sm text-gray-600 mt-2"></p>
+              </div>
+            </div>
+            <div class="overflow-auto">
+              <table class="w-full text-sm" id="employeesTable"></table>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-semibold mb-2">Upload Employees CSV</h3>
+            <input type="file" id="csvFile" accept=".csv" />
+            <button id="uploadCsvBtn" class="ml-2 bg-gray-700 text-white px-3 py-1 rounded">Upload</button>
+            <pre id="uploadCsvResult" class="text-sm bg-gray-50 p-2 rounded mt-2"></pre>
+          </div>
+
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Anomalies</h3>
+              <div class="flex gap-2">
+                <button id="bootstrapBtn" class="bg-gray-500 text-white px-3 py-1 rounded">Seed Demo Data</button>
+                <button id="runAnomalyBtn" class="bg-amber-600 text-white px-3 py-1 rounded">Run Detection</button>
+              </div>
+            </div>
+            <div class="overflow-auto">
+              <table class="w-full text-sm" id="anomalyTable"></table>
+            </div>
+            <pre id="bootstrapResult" class="text-sm bg-gray-50 p-2 rounded mt-2"></pre>
+            <pre id="anomalyRunResult" class="text-sm bg-gray-50 p-2 rounded mt-2"></pre>
+          </div>
+
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Payslips for Month</h3>
+              <div class="flex gap-2">
+                <input id="payslipAdminMonth" class="border rounded px-2 py-1" placeholder="YYYY-MM" />
+                <button id="loadPayslipsBtn" class="bg-gray-700 text-white px-3 py-1 rounded">Load</button>
+              </div>
+            </div>
+            <div class="overflow-auto">
+              <table class="w-full text-sm" id="payslipsTable"></table>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Forecasts</h3>
+              <button id="fetchForecastBtn" class="bg-emerald-600 text-white px-3 py-1 rounded">Generate</button>
+            </div>
+            <div style="height: 400px; width: 100%; background-color: white; padding: 16px;">
+              <canvas id="forecastChart"></canvas>
+            </div>
+            <div class="mt-4">
+              <h4 class="font-semibold mb-2">Forecast Data</h4>
+              <div class="overflow-auto">
+                <table class="w-full text-sm" id="forecastTable"></table>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold">Reports & Analytics</h3>
+              <div class="flex gap-2 items-center">
+                <select id="deptSelect" class="border rounded px-2 py-1">
+                  <option>Engineering</option>
+                  <option>Finance</option>
+                  <option>HR</option>
+                  <option>Sales</option>
+                  <option>Marketing</option>
+                  <option>Operations</option>
+                  <option>Support</option>
+                </select>
+                <button id="loadReportsBtn" class="bg-gray-700 text-white px-3 py-1 rounded">Refresh</button>
+              </div>
+            </div>
+            <div class="grid md:grid-cols-3 gap-4 mb-4">
+              <div class="bg-gray-50 p-3 rounded"><div class="text-xs text-gray-500">Total Employees</div><div id="sumTotalEmp" class="text-xl font-semibold">-</div></div>
+              <div class="bg-gray-50 p-3 rounded"><div class="text-xs text-gray-500">Total Payroll Cost</div><div id="sumTotalCost" class="text-xl font-semibold">-</div></div>
+              <div class="bg-gray-50 p-3 rounded"><div class="text-xs text-gray-500">Latest Trend Month</div><div id="sumLatestMonth" class="text-xl font-semibold">-</div></div>
+            </div>
+            <div style="height: 320px; width: 100%; background-color: white; padding: 16px;">
+              <canvas id="deptTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div id="employeePanel" class="space-y-4 hidden">
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-semibold mb-2">My Profile</h3>
+            <div id="myProfile" class="text-sm text-gray-700"></div>
+          </div>
+          <div class="bg-white p-4 rounded shadow">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-semibold">My Attendance</h3>
+              <div class="flex gap-2">
+                <input id="attDate" class="border rounded px-2 py-1" placeholder="YYYY-MM-DD" />
+                <select id="attStatus" class="border rounded px-2 py-1">
+                  <option>Present</option>
+                  <option>Absent</option>
+                  <option>Leave</option>
+                </select>
+                <input id="attHours" class="border rounded px-2 py-1" placeholder="Hours" />
+                <button id="addAttendanceBtn" class="bg-blue-600 text-white px-3 py-1 rounded">Add</button>
+                <button id="refreshAttendanceBtn" class="bg-gray-700 text-white px-3 py-1 rounded">Refresh</button>
+              </div>
+            </div>
+            <div class="overflow-auto">
+              <table class="w-full text-sm" id="myAttendanceTable"></table>
+            </div>
+            <p id="attMsg" class="text-sm text-gray-600 mt-2"></p>
+          </div>
+          <div class="bg-white p-4 rounded shadow">
+            <h3 class="font-semibold mb-2">My Payslips</h3>
+            <div class="text-sm text-gray-600 mb-2">Showing recent payroll records available to you.</div>
+            <div class="overflow-auto">
+              <table class="w-full text-sm" id="myPayrollTable"></table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API = '/api';
+    let currentUser = null; let chartRef = null;
+    const qs = s => document.querySelector(s);
+    function setView(auth, isAdmin){
+      qs('#loginView').classList.toggle('hidden', auth);
+      qs('#dashboardView').classList.toggle('hidden', !auth);
+      qs('#adminPanels').classList.toggle('hidden', !isAdmin);
+      qs('#employeePanel').classList.toggle('hidden', isAdmin);
+      const items = isAdmin ? [
+        {t:'Dashboard', id:'dashboardTop'},
+        {t:'Employees', id:'employeesSec'},
+        {t:'Leave Balances', id:'leaveBalancesSec'},
+        {t:'All Attendance', id:'allAttendanceSec'},
+        {t:'Attendance Summary', id:'attendanceSummarySec'},
+        {t:'Anomalies', id:'anomaliesSec'},
+        {t:'Forecasts', id:'forecastsSec'},
+        {t:'Reports', id:'reportsSec'},
+        {t:'Payslips', id:'payslipsSec'}
+      ] : [{t:'My Payslips', id:'myPayslipsSec'}];
+      qs('#sidebarNav').innerHTML = items.map(({t,id})=>`<a data-target="${id}" class="navLink block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">${t}</a>`).join('');
+      // Attach nav link scrolling
+      document.querySelectorAll('#sidebarNav .navLink').forEach(a=>{
+        a.onclick = ()=>{
+          const id = a.getAttribute('data-target');
+          const map = {
+            dashboardTop: '#dashboardView',
+            employeesSec: '#employeesTable',
+            leaveBalancesSec: '#leaveBalancesTable',
+            allAttendanceSec: '#allAttendanceTable',
+            attendanceSummarySec: '#attendanceSummaryTable',
+            anomaliesSec: '#anomalyTable',
+            forecastsSec: '#forecastChart',
+            reportsSec: '#deptTrendChart',
+            payslipsSec: '#payslipsTable',
+            myPayslipsSec: '#myPayrollTable'
+          };
+          const sel = map[id];
+          if(sel){ const el = document.querySelector(sel); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+        };
+      });
+    }
+    async function login(){
+      qs('#loginError').textContent = '';
+      const email = qs('#email').value.trim();
+      const password = qs('#password').value;
+      const res = await fetch(`${API}/login`, {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({email,password})});
+      const data = await res.json();
+      if(!res.ok){ qs('#loginError').textContent = data.error||'Login failed'; return; }
+      currentUser = data.user;
+      qs('#userArea').innerHTML = `<span class="mr-2">${currentUser.email} (${currentUser.role})</span><button id="logoutBtn" class="text-blue-600">Logout</button>`;
+      qs('#logoutBtn').onclick = logout;
+      setView(true, currentUser.role==='admin');
+      bindHandlers();
+      loadDashboard();
+    }
+
+    async function register(){
+      qs('#registerError').textContent = '';
+      qs('#registerSuccess').textContent = '';
+      const email = qs('#regEmail').value.trim();
+      const password = qs('#regPassword').value;
+      const employeeId = qs('#regEmployeeId').value.trim();
+      if(!email || !password){
+        qs('#registerError').textContent = 'Email and password required';
+        return;
+      }
+      const res = await fetch(`${API}/register`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, password, role:'employee', employee_id: employeeId || null})});
+      const data = await res.json();
+      if(!res.ok){
+        qs('#registerError').textContent = data.error||'Registration failed';
+        return;
+      }
+      qs('#registerSuccess').textContent = 'Registration submitted. Await admin verification.';
+      qs('#regEmail').value = '';
+      qs('#regPassword').value = '';
+      qs('#regEmployeeId').value = '';
+    }
+
+    async function requestPasswordReset(){
+      qs('#resetError').textContent = '';
+      qs('#resetSuccess').textContent = '';
+      const email = qs('#resetEmail').value.trim();
+      if(!email){
+        qs('#resetError').textContent = 'Email required';
+        return;
+      }
+      const res = await fetch(`${API}/password/reset/request`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email})});
+      const data = await res.json();
+      if(!res.ok){
+        qs('#resetError').textContent = data.error||'Reset request failed';
+        return;
+      }
+      qs('#resetSuccess').textContent = data.message;
+      if(data.token_debug){
+        qs('#resetSuccess').textContent += ` (Debug token: ${data.token_debug})`;
+      }
+    }
+
+
+    // Leave balances pagination state
+    let leaveBalOffset = 0; const leaveBalLimit = 10; let leaveBalTotal = 0;
+    
+    async function loadLeaveBalances(){
+      try{
+        leaveBalOffset = 0; // Reset to first page
+        const res = await fetch(`${API}/employees/leave-balances?limit=${leaveBalLimit}&offset=${leaveBalOffset}`, {credentials:'include'});
+        const data = await res.json();
+        leaveBalTotal = data.total || 0;
+        const balances = data.rows || [];
+        
+        if(!balances.length){
+          qs('#leaveBalancesTable').innerHTML = '<div class="text-gray-500">No employees found</div>';
+          return;
+        }
+        
+        const cols = ['employee_id', 'name', 'email', 'department', 'position', 'leave_balance'];
+        const th = cols.map(c=>`<th class="text-left px-2 py-1 border-b">${c}</th>`).join('');
+        const trs = balances.map(b=>{
+          const tds = [b.employee_id, b.name, b.email, b.department, b.position, b.leave_balance]
+            .map(v=>`<td class="px-2 py-1 border-b">${v}</td>`).join('');
+          const updateBtn = `<button onclick="updateLeaveBalance(${b.employee_id})" class="bg-blue-600 text-white px-2 py-1 rounded text-xs">Update</button>`;
+          return `<tr>${tds}<td class="px-2 py-1 border-b">${updateBtn}</td></tr>`;
+        }).join('');
+        
+        qs('#leaveBalancesTable').innerHTML = `<thead><tr>${th}<th class="text-left px-2 py-1 border-b">Actions</th></tr></thead><tbody>${trs}</tbody>`;
+        
+        // Add Load More button if there are more records
+        const tbl = document.querySelector('#leaveBalancesTable');
+        if(tbl && (leaveBalOffset + leaveBalLimit) < leaveBalTotal){
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = cols.length + 1; // +1 for Actions column
+          td.className = 'px-2 py-2';
+          const btn = document.createElement('button');
+          btn.textContent = 'Load More';
+          btn.className = 'bg-gray-200 px-3 py-1 rounded';
+          btn.onclick = async ()=>{
+            if((leaveBalOffset + leaveBalLimit) < leaveBalTotal){
+              leaveBalOffset += leaveBalLimit;
+              await appendLeaveBalancesPage();
+            }
+          };
+          td.appendChild(btn); tr.appendChild(td); tbl.querySelector('tbody').appendChild(tr);
+        }
+      } catch(e){
+        qs('#leaveBalancesTable').innerHTML = `<div class="text-red-600">Error: ${e.message}</div>`;
+      }
+    }
+    
+    async function appendLeaveBalancesPage(){
+      const res = await fetch(`${API}/employees/leave-balances?limit=${leaveBalLimit}&offset=${leaveBalOffset}`, {credentials:'include'});
+      const data = await res.json();
+      const balances = data.rows || [];
+      if(!balances.length) return;
+      
+      const tbl = document.querySelector('#leaveBalancesTable');
+      const cols = ['employee_id', 'name', 'email', 'department', 'position', 'leave_balance'];
+      const trs = balances.map(b=>{
+        const tds = [b.employee_id, b.name, b.email, b.department, b.position, b.leave_balance]
+          .map(v=>`<td class="px-2 py-1 border-b">${v}</td>`).join('');
+        const updateBtn = `<button onclick="updateLeaveBalance(${b.employee_id})" class="bg-blue-600 text-white px-2 py-1 rounded text-xs">Update</button>`;
+        return `<tr>${tds}<td class="px-2 py-1 border-b">${updateBtn}</td></tr>`;
+      }).join('');
+      
+      tbl.querySelector('tbody').insertAdjacentHTML('beforeend', trs);
+      
+      // Update Load More button or remove it if no more pages
+      const loadMoreRow = tbl.querySelector('tbody tr:last-child');
+      if(loadMoreRow && (leaveBalOffset + leaveBalLimit) >= leaveBalTotal){
+        loadMoreRow.remove();
+      }
+    }
+
+    async function updateLeaveBalance(employeeId){
+      const newBalance = prompt('Enter new leave balance:');
+      if(newBalance === null || newBalance === '') return;
+      
+      try{
+        const res = await fetch(`${API}/employees/${employeeId}/leave-balance`, {
+          method:'PUT', 
+          headers:{'Content-Type':'application/json'}, 
+          credentials:'include', 
+          body: JSON.stringify({leave_balance: parseFloat(newBalance)})
+        });
+        const data = await res.json();
+        if(res.ok){
+          alert('Leave balance updated successfully');
+          await loadLeaveBalances();
+        } else {
+          alert('Update failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch(e){
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function loadAllAttendance(){
+      try{
+        const employeeId = qs('#attendanceEmployeeId').value.trim();
+        const dateFrom = qs('#attendanceDateFrom').value.trim();
+        const dateTo = qs('#attendanceDateTo').value.trim();
+        
+        let url = `${API}/attendance/all?limit=50&offset=0`;
+        if(employeeId) url += `&employee_id=${employeeId}`;
+        if(dateFrom) url += `&date_from=${dateFrom}`;
+        if(dateTo) url += `&date_to=${dateTo}`;
+        
+        const res = await fetch(url, {credentials:'include'});
+        const data = await res.json();
+        if(!data.rows || !data.rows.length){
+          qs('#allAttendanceTable').innerHTML = '<div class="text-gray-500">No attendance records found</div>';
+          return;
+        }
+        const cols = ['employee_id', 'name', 'email', 'department', 'position', 'date', 'status', 'working_hours'];
+        const th = cols.map(c=>`<th class="text-left px-2 py-1 border-b">${c}</th>`).join('');
+        const trs = data.rows.map(r=>{
+          const tds = [r.employee_id, r.name, r.email, r.department, r.position, r.date, r.status, r.working_hours]
+            .map(v=>`<td class="px-2 py-1 border-b">${v}</td>`).join('');
+          const updateBtn = `<button onclick="updateAttendance(${r.id})" class="bg-blue-600 text-white px-2 py-1 rounded text-xs">Update</button>`;
+          return `<tr>${tds}<td class="px-2 py-1 border-b">${updateBtn}</td></tr>`;
+        }).join('');
+        qs('#allAttendanceTable').innerHTML = `<thead><tr>${th}<th class="text-left px-2 py-1 border-b">Actions</th></tr></thead><tbody>${trs}</tbody>`;
+      } catch(e){
+        qs('#allAttendanceTable').innerHTML = `<div class="text-red-600">Error: ${e.message}</div>`;
+      }
+    }
+
+    async function updateAttendance(attendanceId){
+      const status = prompt('Enter new status (Present/Absent/Leave):');
+      if(!status || !['Present', 'Absent', 'Leave'].includes(status)) return;
+      
+      const hours = prompt('Enter working hours:', '8');
+      if(hours === null) return;
+      
+      try{
+        const res = await fetch(`${API}/attendance/${attendanceId}`, {
+          method:'PUT', 
+          headers:{'Content-Type':'application/json'}, 
+          credentials:'include', 
+          body: JSON.stringify({status, working_hours: parseFloat(hours)})
+        });
+        const data = await res.json();
+        if(res.ok){
+          alert('Attendance updated successfully');
+          await loadAllAttendance();
+        } else {
+          alert('Update failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch(e){
+        alert('Error: ' + e.message);
+      }
+    }
+
+    // Attendance summary pagination state
+    let attendanceSummaryOffset = 0; const attendanceSummaryLimit = 10; let attendanceSummaryTotal = 0;
+    
+    async function loadAttendanceSummary(){
+      try{
+        attendanceSummaryOffset = 0; // Reset to first page
+        const month = qs('#attendanceSummaryMonth').value.trim() || new Date().toISOString().slice(0,7);
+        const res = await fetch(`${API}/attendance/summary?month=${month}&limit=${attendanceSummaryLimit}&offset=${attendanceSummaryOffset}`, {credentials:'include'});
+        const data = await res.json();
+        
+        if(data.error){
+          qs('#attendanceSummaryTable').innerHTML = `<div class="text-red-600">Error: ${data.error}</div>`;
+          return;
+        }
+        
+        const summary = data.summary;
+        const details = data.details;
+        const pagination = data.pagination;
+        
+        attendanceSummaryTotal = pagination.total;
+        
+        // Display summary statistics
+        qs('#attendanceSummaryStats').innerHTML = `
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+            <div class="bg-blue-100 p-3 rounded">
+              <div class="text-2xl font-bold text-blue-600">${summary.total_employees}</div>
+              <div class="text-sm text-gray-600">Total Employees</div>
+            </div>
+            <div class="bg-green-100 p-3 rounded">
+              <div class="text-2xl font-bold text-green-600">${summary.total_present_days}</div>
+              <div class="text-sm text-gray-600">Present Days</div>
+            </div>
+            <div class="bg-red-100 p-3 rounded">
+              <div class="text-2xl font-bold text-red-600">${summary.total_absent_days}</div>
+              <div class="text-sm text-gray-600">Absent Days</div>
+            </div>
+            <div class="bg-yellow-100 p-3 rounded">
+              <div class="text-2xl font-bold text-yellow-600">${summary.total_leave_days}</div>
+              <div class="text-sm text-gray-600">Leave Days</div>
+            </div>
+            <div class="bg-purple-100 p-3 rounded">
+              <div class="text-2xl font-bold text-purple-600">${summary.average_attendance_rate.toFixed(1)}%</div>
+              <div class="text-sm text-gray-600">Avg Attendance</div>
+            </div>
+          </div>
+        `;
+        
+        if(!details || !details.length){
+          qs('#attendanceSummaryTable').innerHTML = '<div class="text-gray-500">No attendance data for this month</div>';
+          return;
+        }
+        
+        const cols = ['employee_id', 'name', 'department', 'position', 'present_days', 'absent_days', 'leave_days', 'total_hours'];
+        const th = cols.map(c=>`<th class="text-left px-2 py-1 border-b">${c}</th>`).join('');
+        const trs = details.map(d=>{
+          const tds = [d.employee_id, d.name, d.department, d.position, d.present_days, d.absent_days, d.leave_days, d.total_hours]
+            .map(v=>`<td class="px-2 py-1 border-b">${v}</td>`).join('');
+          return `<tr>${tds}</tr>`;
+        }).join('');
+        
+        qs('#attendanceSummaryTable').innerHTML = `<thead><tr>${th}</tr></thead><tbody>${trs}</tbody>`;
+        
+        // Add Load More button if there are more records
+        const tbl = document.querySelector('#attendanceSummaryTable');
+        if(tbl && pagination.has_more){
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = cols.length;
+          td.className = 'px-2 py-2';
+          const btn = document.createElement('button');
+          btn.textContent = 'Load More';
+          btn.className = 'bg-gray-200 px-3 py-1 rounded';
+          btn.onclick = async ()=>{
+            if(pagination.has_more){
+              attendanceSummaryOffset += attendanceSummaryLimit;
+              await appendAttendanceSummaryPage();
+            }
+          };
+          td.appendChild(btn); tr.appendChild(td); tbl.querySelector('tbody').appendChild(tr);
+        }
+      } catch(e){
+        qs('#attendanceSummaryTable').innerHTML = `<div class="text-red-600">Error: ${e.message}</div>`;
+      }
+    }
+    
+    async function appendAttendanceSummaryPage(){
+      const month = qs('#attendanceSummaryMonth').value.trim() || new Date().toISOString().slice(0,7);
+      const res = await fetch(`${API}/attendance/summary?month=${month}&limit=${attendanceSummaryLimit}&offset=${attendanceSummaryOffset}`, {credentials:'include'});
+      const data = await res.json();
+      const details = data.details || [];
+      const pagination = data.pagination;
+      
+      if(!details.length) return;
+      
+      const tbl = document.querySelector('#attendanceSummaryTable');
+      const cols = ['employee_id', 'name', 'department', 'position', 'present_days', 'absent_days', 'leave_days', 'total_hours'];
+      const trs = details.map(d=>{
+        const tds = [d.employee_id, d.name, d.department, d.position, d.present_days, d.absent_days, d.leave_days, d.total_hours]
+          .map(v=>`<td class="px-2 py-1 border-b">${v}</td>`).join('');
+        return `<tr>${tds}</tr>`;
+      }).join('');
+      
+      tbl.querySelector('tbody').insertAdjacentHTML('beforeend', trs);
+      
+      // Update Load More button or remove it if no more pages
+      const loadMoreRow = tbl.querySelector('tbody tr:last-child');
+      if(loadMoreRow && !pagination.has_more){
+        loadMoreRow.remove();
+      }
+    }
+
+    async function seedAttendanceData(){
+      try{
+        const res = await fetch(`${API}/attendance/seed`, {method:'POST', credentials:'include'});
+        const data = await res.json();
+        if(res.ok){
+          alert('Attendance data seeded successfully!');
+          await loadAllAttendance(); // Refresh the attendance table
+        } else {
+          alert('Seeding failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch(e){
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function logout(){ await fetch(`${API}/logout`, {method:'POST', credentials:'include'}); currentUser=null; qs('#userArea').textContent=''; setView(false,false); }
+    async function loadDashboard(){
+      try {
+        const isAdmin = currentUser && currentUser.role==='admin';
+        if(isAdmin){
+          const resp = await fetch(`${API}/employees?limit=25&offset=0`, {credentials:'include'}).then(r=>r.json());
+          const emps = resp.rows || [];
+          qs('#cardEmployees').innerHTML = `<div class="text-sm text-gray-500">Employees</div><div class="text-2xl font-semibold">${resp.total || emps.length || 0}</div>`;
+          renderTable('#employeesTable', emps);
+          const more = (resp.offset + resp.limit) < (resp.total||0);
+          const tbl = document.querySelector('#employeesTable');
+          if(more){
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = Object.keys(emps[0]||{id:1}).length;
+            td.className = 'px-2 py-2';
+            const btn = document.createElement('button');
+            btn.textContent = 'Load More';
+            btn.className = 'bg-gray-200 px-3 py-1 rounded';
+            let offset = resp.offset + resp.limit;
+            btn.onclick = async ()=>{
+              const next = await fetch(`${API}/employees?limit=25&offset=${offset}`, {credentials:'include'}).then(r=>r.json());
+              const rows = next.rows || [];
+              if(rows.length){
+                const cols = Object.keys(rows[0]);
+                const trs = rows.map(r=>`<tr>${cols.map(c=>`<td class=\"px-2 py-1 border-b\">${r[c]}</td>`).join('')}</tr>`).join('');
+                tbl.querySelector('tbody').insertAdjacentHTML('beforeend', trs);
+                offset += next.limit;
+                if((offset) >= (next.total||0)) btn.disabled = true;
+              } else { btn.disabled = true; }
+            };
+            td.appendChild(btn); tr.appendChild(td); tbl.querySelector('tbody').appendChild(tr);
+          }
+
+          // Load summary
+          try{
+            const sum = await fetch(`${API}/dashboard/summary`, {credentials:'include'}).then(r=>r.json());
+            qs('#sumTotalEmp').textContent = sum.total_employees ?? '-';
+            qs('#sumTotalCost').textContent = `$${(sum.total_payroll_cost||0).toLocaleString()}`;
+            const m = Array.isArray(sum.monthly_trends) && sum.monthly_trends.length ? sum.monthly_trends[sum.monthly_trends.length-1].year_month : '-';
+            qs('#sumLatestMonth').textContent = m;
+          } catch(e){ console.warn('summary load failed', e); }
+
+          // Load department report
+          await loadDepartmentTrend(qs('#deptSelect') ? qs('#deptSelect').value : 'Engineering');
+        } else {
+          // Employee: skip admin endpoints
+          qs('#cardEmployees').innerHTML = `<div class="text-sm text-gray-500">Employees</div><div class="text-2xl font-semibold">-</div>`;
+        }
+        qs('#cardPayroll').innerHTML = `<div class="text-sm text-gray-500">Latest Month</div><div class="text-2xl font-semibold">${new Date().toISOString().slice(0,7)}</div>`;
+        let anoms = [];
+        if(isAdmin) anoms = await fetch(`${API}/anomalies?limit=10&offset=0`, {credentials:'include'}).then(r=>r.json()).then(data=>data.anomalies || []).catch(()=>[]);
+        qs('#cardAnomalies').innerHTML = `<div class="text-sm text-gray-500">Anomalies</div><div class="text-2xl font-semibold">${anoms.length||0}</div>`;
+        if(!isAdmin){
+          const recs = await fetch(`${API}/payroll/${currentUser.employee_id}`, {credentials:'include'}).then(r=>r.json());
+          // sort newest first
+          const rows = Array.isArray(recs) ? recs.sort((a,b)=> (b.year_month||'').localeCompare(a.year_month||'')) : [];
+          renderTable('#myPayrollTable', rows);
+          // Profile
+          try {
+            const me = await fetch(`${API}/employees/${currentUser.employee_id}`, {credentials:'include'}).then(r=>r.json());
+            const p = me || {};
+            qs('#myProfile').innerHTML = `
+              <div><span class="text-gray-500">Name:</span> ${p.name||''}</div>
+              <div><span class="text-gray-500">Email:</span> ${p.email||''}</div>
+              <div><span class="text-gray-500">Department:</span> ${p.department||''}</div>
+              <div><span class="text-gray-500">Designation:</span> ${p.position||''}</div>
+              <div><span class="text-gray-500">Phone:</span> ${p.phone||''}</div>
+              <div><span class="text-gray-500">Joining Date:</span> ${p.joining_date||''}</div>
+              <div><span class="text-gray-500">Base Salary:</span> ${p.base_salary||''}</div>
+            `;
+          } catch {}
+          // Attendance
+          try {
+            await loadAttendancePaged(0);
+          } catch {}
+        }
+      } catch (error) {
+        console.error('Dashboard load error:', error);
+        qs('#cardEmployees').innerHTML = `<div class="text-sm text-gray-500">Employees</div><div class="text-2xl font-semibold">Error</div>`;
+      }
+    }
+
+    async function loadDepartmentTrend(dept){
+      try{
+        const data = await fetch(`${API}/dashboard/department/${encodeURIComponent(dept)}`, {credentials:'include'}).then(r=>r.json());
+        const labels = (data||[]).map(r=>r.year_month);
+        const values = (data||[]).map(r=>r.total_net);
+        const canvas = document.getElementById('deptTrendChart');
+        if(!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if(window.deptChart) window.deptChart.destroy();
+        window.deptChart = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets: [{ label:'Dept Net Salary', data: values, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.2)', tension:0.2 }] },
+          options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } } }
+        });
+      }catch(e){ console.error('dept trend error', e); }
+    }
+    // Anomalies pagination state
+    let anomaliesOffset = 0; const anomaliesLimit = 10; let anomaliesTotal = 0;
+    
+    async function loadAnomaliesWithPagination(){
+      try{
+        anomaliesOffset = 0; // Reset to first page
+        const res = await fetch(`${API}/anomalies?limit=${anomaliesLimit}&offset=${anomaliesOffset}`, {credentials:'include'});
+        const data = await res.json();
+        const anomalies = data.anomalies || [];
+        const pagination = data.pagination;
+        
+        anomaliesTotal = pagination.total;
+        
+        if(!anomalies || !anomalies.length){
+          qs('#anomalyTable').innerHTML = '<div class="text-gray-500">No anomalies detected</div>';
+          return;
+        }
+        
+        renderAnomaliesTable(anomalies, pagination);
+      } catch(e){
+        qs('#anomalyTable').innerHTML = `<div class="text-red-600">Error: ${e.message}</div>`;
+      }
+    }
+    
+    function renderAnomaliesTable(anomalies, pagination){
+      const cols = ['id', 'payroll_record_id', 'score', 'is_anomaly', 'details'];
+      const th = cols.map(c=>`<th class="text-left px-2 py-1 border-b">${c}</th>`).join('');
+      const trs = anomalies.map(a=>{
+        const tds = [a.id, a.payroll_record_id, a.score, a.is_anomaly ? 'Yes' : 'No', a.details]
+          .map(v=>`<td class="px-2 py-1 border-b">${v}</td>`).join('');
+        return `<tr>${tds}</tr>`;
+      }).join('');
+      
+      qs('#anomalyTable').innerHTML = `<thead><tr>${th}</tr></thead><tbody>${trs}</tbody>`;
+      
+      // Add Load More button if there are more records
+      if(pagination.has_more){
+        const tbl = document.querySelector('#anomalyTable');
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = cols.length;
+        td.className = 'px-2 py-2';
+        const btn = document.createElement('button');
+        btn.textContent = 'Load More';
+        btn.className = 'bg-gray-200 px-3 py-1 rounded';
+        btn.onclick = async ()=>{
+          if(pagination.has_more){
+            anomaliesOffset += anomaliesLimit;
+            await appendAnomaliesPage();
+          }
+        };
+        td.appendChild(btn); tr.appendChild(td); tbl.querySelector('tbody').appendChild(tr);
+      }
+    }
+    
+    async function appendAnomaliesPage(){
+      const res = await fetch(`${API}/anomalies?limit=${anomaliesLimit}&offset=${anomaliesOffset}`, {credentials:'include'});
+      const data = await res.json();
+      const anomalies = data.anomalies || [];
+      const pagination = data.pagination;
+      
+      if(!anomalies.length) return;
+      
+      const tbl = document.querySelector('#anomalyTable');
+      const cols = ['id', 'payroll_record_id', 'score', 'is_anomaly', 'details'];
+      const trs = anomalies.map(a=>{
+        const tds = [a.id, a.payroll_record_id, a.score, a.is_anomaly ? 'Yes' : 'No', a.details]
+          .map(v=>`<td class="px-2 py-1 border-b">${v}</td>`).join('');
+        return `<tr>${tds}</tr>`;
+      }).join('');
+      
+      tbl.querySelector('tbody').insertAdjacentHTML('beforeend', trs);
+      
+      // Update Load More button or remove it if no more pages
+      const loadMoreRow = tbl.querySelector('tbody tr:last-child');
+      if(loadMoreRow && !pagination.has_more){
+        loadMoreRow.remove();
+      }
+    }
+    
+    // Forecasts pagination state
+    let forecastsOffset = 0; const forecastsLimit = 10; let forecastsTotal = 0;
+    
+    function renderForecastsTable(forecasts, pagination){
+      if(!forecasts || !forecasts.length){
+        qs('#forecastTable').innerHTML = '<div class="text-gray-500">No forecast data</div>';
+        return;
+      }
+      
+      const cols = ['id', 'department', 'year_month', 'predicted_gross', 'confidence_score'];
+      const th = cols.map(c=>`<th class="text-left px-2 py-1 border-b">${c}</th>`).join('');
+      const trs = forecasts.map(f=>{
+        const tds = [f.id, f.department, f.year_month, f.predicted_gross, f.confidence_score]
+          .map(v=>`<td class="px-2 py-1 border-b">${v}</td>`).join('');
+        return `<tr>${tds}</tr>`;
+      }).join('');
+      
+      qs('#forecastTable').innerHTML = `<thead><tr>${th}</tr></thead><tbody>${trs}</tbody>`;
+      
+      // Add Load More button if there are more records
+      if(pagination && pagination.has_more){
+        const tbl = document.querySelector('#forecastTable');
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = cols.length;
+        td.className = 'px-2 py-2';
+        const btn = document.createElement('button');
+        btn.textContent = 'Load More';
+        btn.className = 'bg-gray-200 px-3 py-1 rounded';
+        btn.onclick = async ()=>{
+          if(pagination.has_more){
+            forecastsOffset += forecastsLimit;
+            await appendForecastsPage();
+          }
+        };
+        td.appendChild(btn); tr.appendChild(td); tbl.querySelector('tbody').appendChild(tr);
+      }
+    }
+    
+    async function appendForecastsPage(){
+      const startInput = (document.getElementById('payrollMonth') && document.getElementById('payrollMonth').value.trim()) || new Date().toISOString().slice(0,7);
+      const res = await fetch(`${API}/forecast?start=${encodeURIComponent(startInput)}&months=3&limit=${forecastsLimit}&offset=${forecastsOffset}`, {credentials:'include'});
+      const data = await res.json();
+      const forecasts = data.forecasts || [];
+      const pagination = data.pagination;
+      
+      if(!forecasts.length) return;
+      
+      const tbl = document.querySelector('#forecastTable');
+      const cols = ['id', 'department', 'year_month', 'predicted_gross', 'confidence_score'];
+      const trs = forecasts.map(f=>{
+        const tds = [f.id, f.department, f.year_month, f.predicted_gross, f.confidence_score]
+          .map(v=>`<td class="px-2 py-1 border-b">${v}</td>`).join('');
+        return `<tr>${tds}</tr>`;
+      }).join('');
+      
+      tbl.querySelector('tbody').insertAdjacentHTML('beforeend', trs);
+      
+      // Update Load More button or remove it if no more pages
+      const loadMoreRow = tbl.querySelector('tbody tr:last-child');
+      if(loadMoreRow && !pagination.has_more){
+        loadMoreRow.remove();
+      }
+    }
+    
+    function renderTable(sel, rows){
+      if(!rows||!rows.length){ qs(sel).innerHTML = '<div class="text-gray-500">No data</div>'; return; }
+      const cols = Object.keys(rows[0]);
+      const th = cols.map(c=>`<th class="text-left px-2 py-1 border-b">${c}</th>`).join('');
+      const trs = rows.map(r=>`<tr>${cols.map(c=>`<td class="px-2 py-1 border-b">${r[c]}</td>`).join('')}</tr>`).join('');
+      qs(sel).innerHTML = `<thead><tr>${th}</tr></thead><tbody>${trs}</tbody>`;
+    }
+    
+    async function runPayroll(){
+      try {
+        const ym = qs('#payrollMonth').value.trim()||new Date().toISOString().slice(0,7);
+        const res = await fetch(`${API}/payroll/run`, {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify({year_month: ym})});
+        const data = await res.json(); 
+        qs('#runPayrollResult').textContent = JSON.stringify(data,null,2);
+        if(res.ok) {
+          // Refresh dashboard data after successful run
+          await loadDashboard();
+          // Also refresh payslips list for the same month
+          await loadPayslips(ym);
+        }
+      } catch (error) {
+        qs('#runPayrollResult').textContent = `Error: ${error.message}`;
+      }
+    }
+    async function uploadCsv(){
+      try {
+        const f = document.getElementById('csvFile').files[0]; if(!f) return;
+        const fd = new FormData(); fd.append('file', f);
+        const res = await fetch(`${API}/employees/upload`, {method:'POST', credentials:'include', body: fd});
+        const data = await res.json(); 
+        qs('#uploadCsvResult').textContent = JSON.stringify(data,null,2);
+        if(res.ok) {
+          // Refresh employees after successful upload
+          await loadDashboard();
+        }
+      } catch (error) {
+        qs('#uploadCsvResult').textContent = `Error: ${error.message}`;
+      }
+    }
+    async function runAnomaly(){
+      try {
+        const res = await fetch(`${API}/run-anomaly?contamination=0.02&months=6&max_rows=100`, {method:'POST', credentials:'include'});
+        const data = await res.json().catch(()=>({}));
+        if(res.ok) {
+          qs('#anomalyRunResult').textContent = JSON.stringify(data, null, 2);
+          const rows = await fetch(`${API}/anomalies?limit=10&offset=0`, {credentials:'include'}).then(r=>r.json()).then(data=>data.anomalies || []);
+          await loadAnomaliesWithPagination();
+          // Also update anomaly count card
+          qs('#cardAnomalies').innerHTML = `<div class="text-sm text-gray-500">Anomalies</div><div class="text-2xl font-semibold">${rows.length||0}</div>`;
+        } else {
+          qs('#anomalyRunResult').textContent = JSON.stringify(data||{error:'Run anomaly failed'}, null, 2);
+          console.error('Anomaly detection failed:', data);
+        }
+      } catch (error) {
+        qs('#anomalyRunResult').textContent = `Error: ${error.message}`;
+        console.error('Anomaly detection error:', error);
+      }
+    }
+    async function bootstrap(){
+      try {
+        const res = await fetch(`${API}/bootstrap?months=3`, {method:'POST', credentials:'include'});
+        const data = await res.json();
+        qs('#bootstrapResult').textContent = JSON.stringify(data, null, 2);
+        if(res.ok) {
+          await loadDashboard();
+          // After seeding, fetch anomalies list (may be empty until run)
+          try { await loadAnomaliesWithPagination(); } catch {}
+        }
+      } catch (e) { 
+        qs('#bootstrapResult').textContent = `Error: ${e.message}`;
+        console.error('Bootstrap error', e); 
+      }
+    }
+    async function genForecast(){
+      try {
+        const errorMessages = document.querySelectorAll('.text-red-500');
+        errorMessages.forEach(msg => msg.remove());
+
+        const startInput = (document.getElementById('payrollMonth') && document.getElementById('payrollMonth').value.trim()) || new Date().toISOString().slice(0,7);
+        const res = await fetch(`${API}/forecast?start=${encodeURIComponent(startInput)}&months=3&limit=10&offset=0`, {credentials:'include'});
+        const data = await res.json(); 
+        if(res.ok && data.forecasts && data.forecasts.length > 0) {
+          const labels = data.forecasts.map(r=>`${r.department} ${r.year_month}`); 
+          const values = data.forecasts.map(r=>r.predicted_gross);
+          
+          const canvas = document.getElementById('forecastChart');
+          canvas.style.backgroundColor = '#ffffff';
+          canvas.style.width = '100%';
+          canvas.style.height = '400px';
+          
+          const ctx = canvas.getContext('2d'); 
+          if(window.chartRef) window.chartRef.destroy();
+          
+          window.chartRef = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [{
+                label: 'Predicted Gross Salary',
+                data: values,
+                backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                borderColor: '#1d4ed8',
+                borderWidth: 1,
+                barThickness: 30
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              layout: {
+                padding: {
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: 20
+                }
+              },
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'top',
+                  labels: {
+                    font: {
+                      size: 14
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.1)'
+                  },
+                  ticks: {
+                    font: {
+                      size: 12
+                    },
+                    callback: function(value) {
+                      return '$' + value.toLocaleString();
+                    }
+                  }
+                },
+                x: {
+                  grid: {
+                    display: false
+                  },
+                  ticks: {
+                    font: {
+                      size: 12
+                    },
+                    maxRotation: 45,
+                    minRotation: 45
+                  }
+                }
+              }
+            }
+          });
+          
+          // Also populate forecast table with pagination
+          renderForecastsTable(data.forecasts, data.pagination);
+        } else {
+          document.getElementById('forecastChart').insertAdjacentHTML('beforebegin', 
+            '<div class="text-red-500 mb-2">No forecast data available. Please try again.</div>');
+        }
+      } catch (error) {
+        console.error('Forecast generation error:', error);
+        document.getElementById('forecastChart').insertAdjacentHTML('beforebegin', 
+          '<div class="text-red-500 mb-2">Error generating forecast. Please try again later.</div>');
+      }
+    }
+    async function downloadPayslip(){
+      try {
+        const ym = document.getElementById('payslipMonth').value.trim()||new Date().toISOString().slice(0,7);
+        const url = `${API}/payslip/${currentUser.employee_id}?month=${ym}`; 
+        const a=document.createElement('a'); 
+        a.href=url; 
+        a.target='_blank'; 
+        a.click();
+      } catch (error) {
+        console.error('Payslip download error:', error);
+      }
+    }
+    function bindHandlers(){
+      const byId = id => document.getElementById(id);
+      const m = [
+        ['loginBtn', login],
+        ['registerBtn', register],
+        ['requestResetBtn', requestPasswordReset],
+        ['showRegisterBtn', ()=>{ qs('#registerForm').classList.remove('hidden'); qs('#resetForm').classList.add('hidden'); }],
+        ['hideRegisterBtn', ()=>{ qs('#registerForm').classList.add('hidden'); }],
+        ['showResetBtn', ()=>{ qs('#resetForm').classList.remove('hidden'); qs('#registerForm').classList.add('hidden'); }],
+        ['hideResetBtn', ()=>{ qs('#resetForm').classList.add('hidden'); }],
+        ['loadLeaveBalancesBtn', loadLeaveBalances],
+        ['loadAllAttendanceBtn', loadAllAttendance],
+        ['seedAttendanceBtn', seedAttendanceData],
+        ['loadAttendanceSummaryBtn', loadAttendanceSummary],
+        ['runPayrollBtn', runPayroll],
+        ['loadPayslipsBtn', async ()=>{ const ym = (qs('#payslipAdminMonth').value.trim()||qs('#payrollMonth').value.trim()||new Date().toISOString().slice(0,7)); await loadPayslips(ym); }],
+        ['loadReportsBtn', async ()=>{ await loadDepartmentTrend(qs('#deptSelect').value); }],
+        ['deptSelect', async ()=>{ await loadDepartmentTrend(qs('#deptSelect').value); }],
+        ['uploadCsvBtn', uploadCsv],
+        ['runAnomalyBtn', runAnomaly],
+        ['bootstrapBtn', bootstrap],
+        ['fetchForecastBtn', genForecast],
+        // downloadPayslipBtn removed per requirement
+        ['refreshEmployeesBtn', loadDashboard],
+        ['refreshAttendanceBtn', async ()=>{
+          try{ await loadAttendancePaged('next'); } catch(e){ console.error(e); }
+        }],
+        ['addAttendanceBtn', addAttendance],
+        ['addEmpBtn', addEmployee]
+      ];
+      m.forEach(([id, fn])=>{ const el = byId(id); if(el) el.onclick = fn; });
+    }
+
+    async function loadPayslips(ym){
+      try{
+        const rows = await fetch(`${API}/payroll/list?month=${encodeURIComponent(ym)}`, {credentials:'include'}).then(r=>r.json());
+        if(!rows || !rows.length){ qs('#payslipsTable').innerHTML = '<div class="text-gray-500">No data</div>'; return; }
+        const cols = ['employee_id','name','email','department','position','year_month','gross_salary','total_deductions','net_salary'];
+        const th = cols.map(c=>`<th class="text-left px-2 py-1 border-b">${c}</th>`).join('');
+        const trs = rows.map(r=>{
+          const tds = [r.employee_id,r.name,r.email,r.department,r.position,r.year_month,r.gross_salary,r.total_deductions,r.net_salary]
+            .map(v=>`<td class=\"px-2 py-1 border-b\">${v}</td>`).join('');
+          return `<tr>${tds}</tr>`;
+        }).join('');
+        qs('#payslipsTable').innerHTML = `<thead><tr>${th}</tr></thead><tbody>${trs}</tbody>`;
+      }catch(e){
+        qs('#payslipsTable').innerHTML = `<div class=\"text-red-600\">Error: ${e.message}</div>`;
+      }
+    }
+
+    async function addEmployee(){
+      try{
+        const payload = {
+          name: qs('#empName').value.trim(),
+          email: qs('#empEmail').value.trim(),
+          department: qs('#empDept').value.trim(),
+          position: qs('#empPos').value.trim(),
+          phone: qs('#empPhone').value.trim(),
+          base_salary: parseFloat(qs('#empSalary').value.trim()),
+          joining_date: qs('#empJoin').value.trim()
+        };
+        const res = await fetch(`${API}/employees`, {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(payload)});
+        const data = await res.json();
+        qs('#addEmpResult').textContent = res.ok ? `Added employee_id ${data.employee_id}` : (data.error||'Failed');
+        if(res.ok){ await loadDashboard(); }
+      } catch(e){ qs('#addEmpResult').textContent = `Error: ${e.message}`; }
+    }
+
+    async function addAttendance(){
+      try{
+        const date = qs('#attDate').value.trim() || new Date().toISOString().slice(0,10);
+        const status = qs('#attStatus').value;
+        const hours = parseFloat(qs('#attHours').value.trim()||'0');
+        const payload = { employee_id: currentUser.employee_id, date, status, working_hours: hours };
+        const res = await fetch(`${API}/attendance`, {method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(payload)});
+        const data = await res.json();
+        qs('#attMsg').textContent = res.ok ? 'Attendance added' : (data.error||'Failed');
+        if(res.ok){
+          await loadAttendancePaged(0);
+        }
+      } catch(e){ qs('#attMsg').textContent = `Error: ${e.message}`; }
+    }
+
+    // Attendance pagination state
+    let attOffset = 0; const attLimit = 25; let attTotal = 0;
+    async function loadAttendancePaged(step){
+      if(step === 0) { attOffset = 0; }
+      if(step === 'next') { if(attOffset + attLimit < attTotal) attOffset += attLimit; }
+      const resp = await fetch(`${API}/attendance/${currentUser.employee_id}?limit=${attLimit}&offset=${attOffset}`, {credentials:'include'}).then(r=>r.json());
+      attTotal = resp.total || 0;
+      const rows = resp.rows || [];
+      renderTable('#myAttendanceTable', rows);
+      // Append Load More row if more pages remain
+      const tbl = document.querySelector('#myAttendanceTable');
+      if(tbl && (attOffset + attLimit) < attTotal){
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = Object.keys(rows[0]||{id:1}).length;
+        td.className = 'px-2 py-2';
+        const btn = document.createElement('button');
+        btn.textContent = 'Load More';
+        btn.className = 'bg-gray-200 px-3 py-1 rounded';
+        btn.onclick = async ()=>{ if((attOffset + attLimit) < attTotal){ attOffset += attLimit; await appendAttendancePage(); } };
+        td.appendChild(btn); tr.appendChild(td); tbl.querySelector('tbody').appendChild(tr);
+      }
+    }
+    async function appendAttendancePage(){
+      const resp = await fetch(`${API}/attendance/${currentUser.employee_id}?limit=${attLimit}&offset=${attOffset}`, {credentials:'include'}).then(r=>r.json());
+      const rows = resp.rows || [];
+      if(!rows.length) return;
+      const tbl = document.querySelector('#myAttendanceTable');
+      const cols = Object.keys(rows[0]);
+      const trs = rows.map(r=>`<tr>${cols.map(c=>`<td class="px-2 py-1 border-b">${r[c]}</td>`).join('')}</tr>`).join('');
+      tbl.querySelector('tbody').insertAdjacentHTML('beforeend', trs);
+    }
+
+    bindHandlers();
+    setView(false,false);
+  </script>
+</body>
+</html>
