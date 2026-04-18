@@ -1306,7 +1306,36 @@ def serve_frontend():
     return send_file(frontend_path)
 
 
-create_tables_and_seed()
+# Fallback to serve frontend for any unmatched route (for client-side routing)
+@app.route('/<path:path>')
+def serve_fallback(path):
+    # Don't interfere with API routes
+    if path.startswith('api/'):
+        return jsonify({'error': 'Not Found'}), 404
+    frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'index.html')
+    return send_file(frontend_path)
+
+
+# Health check endpoint
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("SELECT 1"))
+        return jsonify({'status': 'ok', 'message': 'Server is running and database is connected'})
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({'status': 'error', 'message': f'Database connection failed: {str(e)}'}), 503
+
+
+# Initialize database with error handling
+try:
+    logger.info("Initializing database and creating tables...")
+    create_tables_and_seed()
+    logger.info("✓ Database initialized successfully")
+except Exception as e:
+    logger.error(f"✗ Database initialization failed: {str(e)}")
+    logger.error("Please run: python backend/preprocess.py")
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

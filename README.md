@@ -80,4 +80,20 @@ pytest
 ## Switch to MySQL (sketch)
 - Change `DATABASE_URL` in `backend/app.py` to a MySQL URI (e.g., `mysql+pymysql://user:pass@host/db`), install `pymysql`, and run `backend/preprocess.py` to (re)create tables.
 
+## 📸 Screenshots
+
+### 📊 Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### 👥 Employee Management
+![Employees](screenshots/employees.png)
+
+### 📅 Attendance
+![Attendance](screenshots/attendance.png)
+
+### 📈 Forecasting
+![Forecasting](screenshots/forecasting.png)
+
+### 📊 Analysis / Reports
+![Analysis](screenshots/analysis.png)
 
